@@ -1,8 +1,8 @@
 package de.devilAPI.combineallenchantments;
 
 import org.bukkit.Bukkit;
+import org.bukkit.craftbukkit.v1_21_R3.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
@@ -10,8 +10,10 @@ import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import net.minecraft.nbt.NBTTagCompound; 
+import net.minecraft.world.item.ItemStack; // Using fully qualified NMS ItemStack
+
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class CombineEnchantments extends JavaPlugin implements Listener {
 
@@ -36,34 +38,28 @@ public class CombineEnchantments extends JavaPlugin implements Listener {
             return;
         }
 
-        // Clone the first item to use as the result
-        ItemStack resultItem = firstItem.clone();
+        // Convert to NMS ItemStack to directly modify NBT data
+        net.minecraft.world.item.ItemStack nmsFirst = CraftItemStack.asNMSCopy(firstItem);
+        net.minecraft.world.item.ItemStack nmsSecond = CraftItemStack.asNMSCopy(secondItem);
 
-        // Merge enchantments from both items
-        Map<Enchantment, Integer> combinedEnchantments = firstItem.getEnchantments().entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        Integer::max));
+        // Get NBT tags from the NMS items
+        NBTTagCompound firstTag = nmsFirst.getOrCreateTag(); // Accessing NBT data correctly
+        NBTTagCompound secondTag = nmsSecond.getOrCreateTag();
 
-        secondItem.getEnchantments().forEach((enchantment, level) ->
-                combinedEnchantments.merge(enchantment, level, Integer::max));
-
-        // Check if the second item is an enchanted book and merge its enchantments
-        if (secondItem.getType().toString().endsWith("BOOK")) {
-            Map<Enchantment, Integer> bookEnchantments = secondItem.getEnchantments();
-            bookEnchantments.forEach((enchantment, level) ->
-                    combinedEnchantments.merge(enchantment, level, Integer::max));
+        // Combine enchantments from both items
+        if (secondTag != null && secondTag.contains("Enchantments")) {
+            NBTTagCompound enchantments = secondTag.getCompound("Enchantments");
+            firstTag.merge(enchantments); // Merging the enchantments correctly
         }
 
-        // Apply the combined enchantments to the result item
-        combinedEnchantments.forEach((enchantment, level) ->
-                resultItem.addUnsafeEnchantment(enchantment, level));
+        // Set the combined tag back to the first item
+        nmsFirst.setTag(firstTag); 
 
-        // Set the result in the anvil inventory
+        // Convert back to Bukkit ItemStack and set as result
+        ItemStack resultItem = CraftItemStack.asBukkitCopy(nmsFirst);
         event.setResult(resultItem);
 
-        // Calculate and set the repair cost based on vanilla mechanics
+        // Calculate repair cost
         int repairCost = calculateRepairCost(firstItem, secondItem);
         inventory.setRepairCost(repairCost);
     }
