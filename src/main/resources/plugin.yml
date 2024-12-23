@@ -5,3 +5,4 @@ main: "de.devilAPI.combineallenchantments.CombineEnchantments"
 api-version: 1.21
 commands:
 permissions:
+depend: [NBTAPI]
