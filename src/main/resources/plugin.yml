@@ -1,0 +1,7 @@
+name: "CombineAllEnchantments"
+version: "${project.version}"
+author: "devilAPI"
+main: "de.devilAPI.combineallenchantments.CombineAllEnchantments"
+api-version: 1.21
+commands:
+permissions:

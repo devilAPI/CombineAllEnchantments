@@ -1,0 +1,5 @@
+.idea/
+*.iml
+target/original-redstone-spawners-1.0.jar
+target/redstone-spawners-1.0.jar
+/target
